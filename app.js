@@ -1,6 +1,6 @@
-const db = require("../db.js");
-
+const db = require("/home/ubuntu/db/db.js");
 const { createClient } = require("redis");
+
 let client; // 전역 변수로 설정
 
 async function run() {
@@ -11,31 +11,28 @@ async function run() {
   try {
     await client.connect();
     console.log("Connected to Redis");
+
+    // 연결이 완료된 후 save 함수 호출
+    await save();
   } catch (err) {
     console.error("Could not connect to Redis:", err);
   }
 }
+
 async function save() {
-  let init = 0;
-  const q = "INSERT INTO covision (covisionName) VALUES (?)";
+  const now = new Date();
 
-  try {
-    const num = await client.lLen("mylist");
-
-    if (num > init) {
-      const value = await client.lRange("mylist", 0, init);
-      init = init + 1;
-      db.query(q, [value], (err, data) => {
-        if (err) return res.status(500).json({ error: err });
-        return;
-      });
-      return console.log("Connected to Redis");
-    } else {
-      return console.log("Connected to Redis");
-    }
-  } catch (err) {
-    console.log("Connected to Redis");
+  for (let i = 0; i < 86400; i++) {
+    const time = new Date(now);
+    time.setSeconds(now.getSeconds() + i);
+    const value = time.toISOString().split("T")[1].split(".")[0];
+    await client.rpush("covi-back", value);
   }
+
+  // 리스트 추가 완료 후 Redis 연결 종료
+  client.quit();
 }
-save();
+
+// run 함수 호출로 프로그램 시작
 run();
+
