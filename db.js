@@ -6,29 +6,30 @@ const dbConfig = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
 };
 
-let db;
+// 환경 변수 유효성 검사
+if (!dbConfig.host || !dbConfig.user || !dbConfig.password || !dbConfig.database) {
+  throw new Error('Database connection details are missing from environment variables.');
+}
+
+let pool;
 
 const connectDb = async () => {
   try {
-    db = await mysql.createConnection(dbConfig);
+    pool = mysql.createPool(dbConfig);
+    const conn = await pool.getConnection();
     console.log("MySQL Connect Success.");
+    conn.release(); // 연결 테스트 후 연결을 반환
   } catch (error) {
     console.error("MySQL Connect Error:", error);
-    setTimeout(connectDb, 2000);
+    setTimeout(connectDb, 2000); // 재시도
   }
-
-  db.on("error", async (error) => {
-    console.error("MySQL Error:", error);
-    if (error.code === "PROTOCOL_CONNECTION_LOST") {
-      await connectDb();
-    } else {
-      throw error;
-    }
-  });
 };
 
 connectDb();
 
-module.exports = db;
+module.exports = pool.promise(); // 연결 풀 반환
