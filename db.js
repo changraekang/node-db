@@ -1,31 +1,28 @@
-const mysql = require("mysql2");
-// Check if the environment is local (development) and load dotenv
+require('dotenv').config();
+const mysql = require('mysql2/promise');
 
 const dbConfig = {
-  host: "database-1.cax59lekyebg.ap-northeast-2.rds.amazonaws.com",
-  user: "lckfantasy",
-  password: "asdasd",
-  database: "lckfantasy",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 };
 
 let db;
 
-const connectDb = () => {
-  db = mysql.createConnection(dbConfig);
-
-  db.connect((error) => {
-    if (error) {
-      console.error("MySQL Connect Error", error);
-      setTimeout(connectDb, 2000);
-    } else {
-      console.log("MySQL Connect Success.");
-    }
-  });
-
-  db.on("error", (error) => {
+const connectDb = async () => {
+  try {
+    db = await mysql.createConnection(dbConfig);
+    console.log("MySQL Connect Success.");
+  } catch (error) {
     console.error("MySQL Connect Error:", error);
+    setTimeout(connectDb, 2000);
+  }
+
+  db.on("error", async (error) => {
+    console.error("MySQL Error:", error);
     if (error.code === "PROTOCOL_CONNECTION_LOST") {
-      connectDb();
+      await connectDb();
     } else {
       throw error;
     }
