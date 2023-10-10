@@ -1,7 +1,7 @@
-const db = require('/home/ubuntu/db/db.js');
+const db = require('../db.js');
 const { createClient } = require("redis");
 
-let client; // 전역 변수로 설정
+let client;
 
 async function run() {
     client = createClient();
@@ -12,7 +12,6 @@ async function run() {
         await client.connect();
         console.log("Connected to Redis");
 
-        // 연결이 완료된 후 save 함수 호출
         await save();
     } catch (err) {
         console.error("Could not connect to Redis:", err);
@@ -30,35 +29,27 @@ async function save() {
         await client.rPush('covi-back', value);
 
         const length = await client.lLen('covi-back');
-        if (length === 1000) {
-            const items = await client.lRange('covi-back', 0, 999); // 처음부터 999번째 아이템까지 가져옵니다.
-            await client.rPush('covi-back-array', JSON.stringify(items)); // 배열을 문자열로 변환하여 저장
-            await client.lTrim('covi-back', 1000, -1); // 처음 1000개 아이템 제거
-             // DB에 저장
-        await insertToDB(items);
+        if (length === 100) {
+            const items = await client.lRange('covi-back', 0, 99);
+            const combinedItems = items.join(","); // 1000개의 아이템을 하나의 문자열로 조인
+            await insertToDB(combinedItems);
+            await client.rPush('covi-back-array', combinedItems);
+            await client.lTrim('covi-back', 100, -1);
         }
-        
     }
 
-    // 리스트 추가 완료 후 Redis 연결 종료
     client.quit();
 }
 
-async function insertToDB(items) {
+async function insertToDB(combinedItems) {
+    console.log(combinedItems, ":: DB row")
     const query = "INSERT INTO covision (covisionName) VALUES (?)";
 
-    for (const item of items) {
-        try {
-            await db.query(query, [item]); // db.js에서 query 기능이 제공되는 것으로 가정
-        } catch (error) {
-            console.error("Error inserting into database:", error);
-        }
+    try {
+        await db.query(query, [combinedItems]);
+    } catch (error) {
+        console.error("Error inserting into database:", error);
     }
-
-    // 데이터를 DB에 저장한 후, Redis에서 해당 데이터 삭제
-    await client.lTrim('covi-back-array', items.length, -1);
 }
 
-
-// run 함수 호출로 프로그램 시작
 run();
