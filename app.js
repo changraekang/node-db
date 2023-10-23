@@ -1,41 +1,21 @@
-const db = require("../db.js");
+const db = require("./db.js");
 
-const { createClient } = require("redis");
-let client; // 전역 변수로 설정
-
-async function run() {
-  client = createClient();
-
-  client.on("error", (err) => console.log("Redis Client Error", err));
+async function saveUser() {
+  const insertQuery =
+    "INSERT INTO users (user_id, username, password, email) VALUES (?, ?, ?, ?)";
+  const values = ["crkang", "kang", "Covi@2020", "crkang@covision.co.kr"];
 
   try {
-    await client.connect();
-    console.log("Connected to Redis");
-  } catch (err) {
-    console.error("Could not connect to Redis:", err);
-  }
-}
-async function save() {
-  let init = 0;
-  const q = "INSERT INTO covision (covisionName) VALUES (?)";
-
-  try {
-    const num = await client.lLen("mylist");
-
-    if (num > init) {
-      const value = await client.lRange("mylist", 0, init);
-      init = init + 1;
-      db.query(q, [value], (err, data) => {
-        if (err) return res.status(500).json({ error: err });
-        return;
+    await new Promise((resolve, reject) => {
+      db.query(insertQuery, values, (err) => {
+        if (err) reject(err);
+        resolve();
       });
-      return console.log("Connected to Redis");
-    } else {
-      return console.log("Connected to Redis");
-    }
-  } catch (err) {
-    console.log("Connected to Redis");
+    });
+    console.log("User saved successfully.");
+  } catch (error) {
+    console.error("Error saving user:", error);
   }
 }
-save();
-run();
+
+saveUser();

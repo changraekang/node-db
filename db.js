@@ -2,10 +2,10 @@ const mysql = require("mysql2");
 // Check if the environment is local (development) and load dotenv
 
 const dbConfig = {
-  host: "database-1.cax59lekyebg.ap-northeast-2.rds.amazonaws.com",
-  user: "lckfantasy",
-  password: "asdasd",
-  database: "lckfantasy",
+  host: "192.168.11.118",
+  user: "kang",
+  password: "rkdrkdtndnjffo",
+  database: "kangchangrae",
 };
 
 let db;
