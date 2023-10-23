@@ -1,37 +1,27 @@
-const mysql = require("mysql2");
-// Check if the environment is local (development) and load dotenv
+require("dotenv").config();
+const mysql = require("mysql2/promise");
 
 const dbConfig = {
-  host: "192.168.11.118",
-  user: "kang",
-  password: "rkdrkdtndnjffo",
-  database: "kangchangrae",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 };
 
-let db;
+if (
+  !dbConfig.host ||
+  !dbConfig.user ||
+  !dbConfig.password ||
+  !dbConfig.database
+) {
+  throw new Error(
+    "Database connection details are missing from environment variables."
+  );
+}
 
-const connectDb = () => {
-  db = mysql.createConnection(dbConfig);
+const pool = mysql.createPool(dbConfig);
 
-  db.connect((error) => {
-    if (error) {
-      console.error("MySQL Connect Error", error);
-      setTimeout(connectDb, 2000);
-    } else {
-      console.log("MySQL Connect Success.");
-    }
-  });
-
-  db.on("error", (error) => {
-    console.error("MySQL Connect Error:", error);
-    if (error.code === "PROTOCOL_CONNECTION_LOST") {
-      connectDb();
-    } else {
-      throw error;
-    }
-  });
-};
-
-connectDb();
-
-module.exports = db;
+module.exports = pool;
